@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <meta content="text/htmlcharset=utf-8" http-equiv="Content-Type" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="shortcut icon" href="candle.png">
     <link rel="apple-touch-icon" href="candle.png">
@@ -12,7 +12,7 @@
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.8.0/build/styles/default.min.css" />
     <style>
-        @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@200;300;400&family=Source+Sans+3:wght@100;200;300;400;500;600;700;800;900&display=swap");
+        @import url("https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@200300400&family=Source+Sans+3:wght@100200300400500600700800900&display=swap");
 
         html,
         body {
@@ -27,14 +27,12 @@
         }
     </style>
     <style type="text/tailwindcss">
-        .link {
-            @apply underline hover:text-blue-500 hover:no-underline;
-            }
+        .link { @apply underline hover:text-blue-500 hover:no-underline; }
         </style>
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module">
-        import snarkdown from "https://cdn.skypack.dev/snarkdown";
-        import hljs from "https://cdn.skypack.dev/highlight.js";
+        import snarkdown from "https://cdn.skypack.dev/snarkdown"
+        import hljs from "https://cdn.skypack.dev/highlight.js"
         // models base url
         const MODELS = {
             phi_1_5_q4k: {
@@ -91,99 +89,68 @@
                 seq_len: 2048,
                 size: "1.50 GB",
             },
-        };
+        }
 
-        const TEMPLATES = [
-            {
-                title: "Simple prompt",
-                prompt: `Sebastien is in London today, it’s the middle of July yet it’s raining, so Sebastien is feeling gloomy. He`,
-            },
-            {
-                title: "Think step by step",
-                prompt: `Suppose Alice originally had 3 apples, then Bob gave Alice 7 apples, then Alice gave Cook 5 apples, and then Tim gave Alice 3x the amount of apples Alice had. How many apples does Alice have now?\nLet’s think step by step.`,
-            },
-            {
-                title: "Explaing a code snippet",
-                prompt: `What does this script do?  
-            \`\`\`python\ns = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\ns.bind(('', 0))\ns.listen(1)\nconn, addr = s.accept()\nprint('Connected by', addr)\nreturn conn.getsockname()[1]\n\`\`\`\nLet’s think step by step.`,
-            },
-            {
-                title: "Question answering",
-                prompt: `Instruct: What is the capital of France?\nOutput:`,
-            },
-            {
-                title: "Chat mode",
-                prompt: `Alice: Can you tell me how to create a python application to go through all the files in one directory where the file’s name DOES NOT end with '.json'?\nBob:`,
-            },
-            {
-                title: "Python code completion",
-                prompt: `"""write a python function called batch(function, list) which call function(x) for x in\nlist in parallel"""\nSolution:`,
-            },
-            {
-                title: "Python Sample",
-                prompt: `"""Can you make sure those histograms appear side by side on the same plot:\n\`\`\`python\nplt.hist(intreps_retrained[0][1].view(64,-1).norm(dim=1).detach().cpu().numpy(), bins = 20)\nplt.hist(intreps_pretrained[0][1].view(64,-1).norm(dim=1).detach().cpu().numpy(), bins = 20)\n\`\`\`\n"""`,
-            },
-            {
-                title: "Write a Twitter post",
-                prompt: `Write a twitter post for the discovery of gravitational wave.\nTwitter Post:`,
-            },
-            {
-                title: "Write a review",
-                prompt: `Write a polite review complaining that the video game 'Random Game' was too badly optimized and it burned my laptop.\nVery polite review:`,
-            },
-        ];
         const phiWorker = new Worker("./phiWorker.js", {
             type: "module",
-        });
-        async function generateSequence(controller) {
-            const getValue = (id) => document.querySelector(`#${id}`).value;
-            const modelID = getValue("model");
-            const model = MODELS[modelID];
+        })
+        async function generateSequence(prompt, controller) {
+            const getValue = (id) => document.querySelector(`#${id}`).value
+            const modelID = getValue("model")
+            const model = MODELS[modelID]
             const weightsURL =
                 model.model instanceof Array
                     ? model.model.map((m) => model.base_url + m)
-                    : model.base_url + model.model;
-            const tokenizerURL = model.base_url + model.tokenizer;
-            const configURL = model.base_url + model.config;
+                    : model.base_url + model.model
+            const tokenizerURL = model.base_url + model.tokenizer
+            const configURL = model.base_url + model.config
 
-            const prompt = getValue("prompt").trim();
-            const temperature = getValue("temperature");
-            const topP = getValue("top-p");
-            const repeatPenalty = getValue("repeat_penalty");
-            const seed = getValue("seed");
-            const maxSeqLen = getValue("max-seq");
+            // const prompt = getValue("prompt").trim()
+            const temperature = getValue("temperature")
+            const topP = getValue("top-p")
+            const repeatPenalty = getValue("repeat_penalty")
+            const seed = getValue("seed")
+            const maxSeqLen = getValue("max-seq")
 
             function updateStatus(data) {
-                const outStatus = document.querySelector("#output-status");
-                const outGen = document.querySelector("#output-generation");
-                const outCounter = document.querySelector("#output-counter");
+                const outStatus = document.querySelector("#output-status")
+                const outGen = document.querySelector("#output-generation")
+                const outCounter = document.querySelector("#output-counter")
 
                 switch (data.status) {
                     case "loading":
-                        outStatus.hidden = false;
-                        outStatus.innerHTML = data.message.replaceAll("\n", "<br>\n");
-                        outGen.hidden = true;
-                        outCounter.hidden = true;
-                        break;
+                        outStatus.hidden = false
+                        outStatus.innerHTML = data.message.replaceAll("\n", "<br>\n")
+                        outGen.hidden = true
+                        outCounter.hidden = true
+                        break
                     case "generating":
-                        const { message, prompt, sentence, tokensSec, totalTime } = data;
-                        outStatus.hidden = true;
-                        outCounter.hidden = false;
-                        outGen.hidden = false;
-                        outGen.innerHTML = snarkdown(prompt + sentence);
+                        const { message, prompt, sentence, tokensSec, totalTime } = data
+                        outStatus.hidden = true
+                        outCounter.hidden = false
+                        outGen.hidden = false
+                        outGen.innerHTML = snarkdown(prompt + sentence).replaceAll('\n', '<br>\n')
                         outCounter.innerHTML = `${(totalTime / 1000).toFixed(
                             2
-                        )}s (${tokensSec.toFixed(2)} tok/s)`;
-                        hljs.highlightAll();
-                        break;
+                        )}s (${tokensSec.toFixed(2)} tok/s)`
+                        hljs.highlightAll()
+                        break
                     case "complete":
-                        outStatus.hidden = true;
-                        outGen.hidden = false;
-                        break;
+                        outStatus.hidden = true
+                        outGen.hidden = false
+                        break
                 }
             }
 
+            function decodeHtml(html) {
+                var txt = document.createElement('textarea')
+                txt.innerHTML = html
+                return txt.value
+            }
+
             return new Promise((resolve, reject) => {
+                let TEXT = document.querySelector('textarea#terminate')?.innerText
+                if (TEXT === '') TEXT = decodeHtml(document.querySelector('textarea#terminate')?.innerHTML)
                 phiWorker.postMessage({
                     weightsURL,
                     modelID,
@@ -197,134 +164,128 @@
                     seed: seed,
                     maxSeqLen,
                     command: "start",
-                });
+                    stuff: TEXT.split(',').map(e => e.trim())
+                })
 
                 const handleAbort = () => {
-                    phiWorker.postMessage({ command: "abort" });
-                };
+                    phiWorker.postMessage({ command: "abort" })
+                }
                 const handleMessage = (event) => {
-                    const { status, error, message, prompt, sentence } = event.data;
-                    if (status) updateStatus(event.data);
+                    const { status, error, message, prompt, sentence } = event.data
+                    if (status) updateStatus(event.data)
                     if (error) {
-                        phiWorker.removeEventListener("message", handleMessage);
-                        reject(new Error(error));
+                        phiWorker.removeEventListener("message", handleMessage)
+                        reject(new Error(error))
                     }
                     if (status === "aborted") {
-                        phiWorker.removeEventListener("message", handleMessage);
-                        resolve(event.data);
+                        phiWorker.removeEventListener("message", handleMessage)
+                        resolve(event.data)
                     }
                     if (status === "complete") {
-                        phiWorker.removeEventListener("message", handleMessage);
-                        resolve(event.data);
+                        phiWorker.removeEventListener("message", handleMessage)
+                        resolve(event.data)
                     }
-                };
+                }
 
-                controller.signal.addEventListener("abort", handleAbort);
-                phiWorker.addEventListener("message", handleMessage);
-            });
+                controller.signal.addEventListener("abort", handleAbort)
+                phiWorker.addEventListener("message", handleMessage)
+            })
         }
 
-        const form = document.querySelector("#form");
-        const prompt = document.querySelector("#prompt");
-        const clearBtn = document.querySelector("#clear-btn");
-        const runBtn = document.querySelector("#run");
-        const modelSelect = document.querySelector("#model");
-        const promptTemplates = document.querySelector("#prompt-templates");
-        let runController = new AbortController();
-        let isRunning = false;
+        const form = document.querySelector("#form")
+        const prompt = document.querySelector("#prompt")
+        const clearBtn = document.querySelector("#clear-btn")
+        const runBtn = document.querySelector("#run")
+        const modelSelect = document.querySelector("#model")
+        let runController = new AbortController()
+        let isRunning = false
 
         document.addEventListener("DOMContentLoaded", () => {
             for (const [id, model] of Object.entries(MODELS)) {
-                const option = document.createElement("option");
-                option.value = id;
-                option.innerText = `${id} (${model.size})`;
-                modelSelect.appendChild(option);
+                const option = document.createElement("option")
+                option.value = id
+                option.innerText = `${id} (${model.size})`
+                modelSelect.appendChild(option)
             }
-            const query = new URLSearchParams(window.location.search);
-            const modelID = query.get("model");
+            const query = new URLSearchParams(window.location.search)
+            const modelID = query.get("model")
             if (modelID) {
-                modelSelect.value = modelID;
+                modelSelect.value = modelID
             } else {
-                modelSelect.value = "phi_1_5_q4k";
+                modelSelect.value = "phi_1_5_q4k"
             }
+        })
 
-            for (const [i, { title, prompt }] of TEMPLATES.entries()) {
-                const div = document.createElement("div");
-                const input = document.createElement("input");
-                input.type = "radio";
-                input.name = "task";
-                input.id = `templates-${i}`;
-                input.classList.add("font-light", "cursor-pointer");
-                input.value = prompt;
-                const label = document.createElement("label");
-                label.htmlFor = `templates-${i}`;
-                label.classList.add("cursor-pointer");
-                label.innerText = title;
-                div.appendChild(input);
-                div.appendChild(label);
-                promptTemplates.appendChild(div);
-            }
-        });
+        const TEMPLATES = { entries: () => [] }
 
-        promptTemplates.addEventListener("change", (e) => {
-            const template = e.target.value;
-            prompt.value = template;
-            prompt.style.height = "auto";
-            prompt.style.height = prompt.scrollHeight + "px";
-            runBtn.disabled = false;
-            clearBtn.classList.remove("invisible");
-        });
+        for (const [i, { title, prompt }] of TEMPLATES.entries()) {
+            const div = document.createElement("div")
+            const input = document.createElement("input")
+            input.type = "radio"
+            input.name = "task"
+            input.id = `templates-${i}`
+            input.classList.add("font-light", "cursor-pointer")
+            input.value = prompt
+            const label = document.createElement("label")
+            label.htmlFor = `templates-${i}`
+            label.classList.add("cursor-pointer")
+            label.innerText = title
+            div.appendChild(input)
+            div.appendChild(label)
+            promptTemplates.appendChild(div)
+        }
+
         modelSelect.addEventListener("change", (e) => {
-            const query = new URLSearchParams(window.location.search);
-            query.set("model", e.target.value);
+            const query = new URLSearchParams(window.location.search)
+            query.set("model", e.target.value)
             window.history.replaceState(
                 {},
                 "",
                 `${window.location.pathname}?${query}`
-            );
-            window.parent.postMessage({ queryString: "?" + query }, "*");
-            const model = MODELS[e.target.value];
-            document.querySelector("#max-seq").max = model.seq_len;
-            document.querySelector("#max-seq").nextElementSibling.value = 200;
-        });
+            )
+            window.parent.postMessage({ queryString: "?" + query }, "*")
+            const model = MODELS[e.target.value]
+            document.querySelector("#max-seq").max = model.seq_len
+            document.querySelector("#max-seq").nextElementSibling.value = 200
+        })
 
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            if (isRunning) {
-                stopRunning();
-            } else {
-                startRunning();
-                await generateSequence(runController);
-                stopRunning();
-            }
-        });
+        // form.addEventListener("submit", async (e) => {
+        //     e.preventDefault()
+        //     if (isRunning) {
+        //         stopRunning()
+        //     } else {
+        //         startRunning()
+        //         await generateSequence(document.querySelector(`#prompt`).value, runController)
+        //         stopRunning()
+        //     }
+        // })
 
         function startRunning() {
-            isRunning = true;
-            runBtn.textContent = "Stop";
+            isRunning = true
+            runBtn.textContent = "Stop"
         }
 
         function stopRunning() {
-            runController.abort();
-            runController = new AbortController();
-            runBtn.textContent = "Run";
-            isRunning = false;
+            runController.abort()
+            runController = new AbortController()
+            runBtn.textContent = "Run"
+            isRunning = false
         }
         clearBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            prompt.value = "";
-            clearBtn.classList.add("invisible");
-            runBtn.disabled = true;
-            stopRunning();
-        });
+            e.preventDefault()
+            prompt.value = ""
+            clearBtn.classList.add("invisible")
+            runBtn.disabled = true
+            stopRunning()
+        })
         prompt.addEventListener("input", (e) => {
-            runBtn.disabled = false;
+            runBtn.disabled = false
             if (e.target.value.length > 0) {
-                clearBtn.classList.remove("invisible");
+                clearBtn.classList.remove("invisible")
             } else {
-                clearBtn.classList.add("invisible");
+                clearBtn.classList.add("invisible")
             }
-        });
+        })
     </script>
 </head>
 
@@ -346,16 +307,10 @@
             <label for="model" class="font-medium">Models Options: </label>
             <select id="model" class="border-2 border-gray-500 rounded-md font-light"></select>
         </div>
-        <div>
-            <details>
-                <summary class="font-medium cursor-pointer">Prompt Templates</summary>
-                <form id="prompt-templates" class="grid grid-cols-1 sm:grid-cols-2 gap-1 my-2"></form>
-            </details>
-        </div>
-        <form id="form" class="flex text-normal px-1 py-1 border border-gray-700 rounded-md items-center">
+        <!-- <form id="form" class="flex text-normal px-1 py-1 border border-gray-700 rounded-md items-center">
             <input type="submit" hidden />
             <textarea type="text" id="prompt" class="font-light text-lg w-full px-3 py-2 mx-1 resize-none outline-none"
-                oninput="this.style.height = 0;this.style.height = this.scrollHeight + 'px'"
+                oninput="this.style.height = 0; this.style.height = this.scrollHeight + 'px'"
                 placeholder="Add your prompt here..."></textarea>
             <button id="clear-btn">
                 <svg fill="none" xmlns="http://www.w3.org/2000/svg" width="40" viewBox="0 0 70 40">
@@ -367,7 +322,7 @@
                 class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-2 w-16 rounded disabled:bg-gray-300 disabled:cursor-not-allowed">
                 Run
             </button>
-        </form>
+        </form> -->
         <details>
             <summary class="font-medium cursor-pointer">Advanced Options</summary>
             <div class="grid grid-cols-3 max-w-md items-center gap-3 py-3">
@@ -378,10 +333,10 @@
                 <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
                     200</output>
                 <label class="text-sm font-medium" for="temperature">Temperature</label>
-                <input type="range" id="temperature" name="temperature" min="0" max="2" step="0.01" value="0.00"
+                <input type="range" id="temperature" name="temperature" min="0" max="2" step="0.01" value="0.50"
                     oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)" />
                 <output class="text-xs w-[50px] text-center font-light px-1 py-1 border border-gray-700 rounded-md">
-                    0.00</output>
+                    0.50</output>
                 <label class="text-sm font-medium" for="top-p">Top-p</label>
                 <input type="range" id="top-p" name="top-p" min="0" max="1" step="0.01" value="1.00"
                     oninput="this.nextElementSibling.value = Number(this.value).toFixed(2)" />
@@ -400,6 +355,12 @@
                     class="bg-gray-700 hover:bg-gray-800 text-white font-normal py-1 w-[50px] rounded disabled:bg-gray-300 disabled:cursor-not-allowed text-sm">
                     Rand
                 </button>
+                <label hidden class="text-sm font-medium" for="terminate">End tokens</label>
+                <textarea hidden type="text" id="terminate"
+                    class="font-light text-lg w-full px-3 py-2 mx-1 resize-none outline-none"
+                    style="padding-left: -10px; border: 1px solid black; border-radius: 5px; width: 500px"
+                    oninput="this.style.height = 0; this.style.height = this.scrollHeight + 'px'"
+                    placeholder="Add your terminate tokens here, Separated by `, `"><|endoftext|>, <|user|>, <|system|>, <|assistant|></textarea>
             </div>
         </details>
         <div>

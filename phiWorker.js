@@ -1,4 +1,4 @@
-import init, { Model } from "./build/m.js";
+import init, { Model } from "./build/m.js"
 
 function fixTwo(x) { return Math.floor(x * 100) / 100 } 
 
@@ -46,26 +46,26 @@ let lastTime = Infinity
 let times = [0, 0, 0, 0]
 
 async function fetchArrayBuffer(url) {
-    const cacheName = "phi-mixformer-candle-cache";
-    const cache = await caches.open(cacheName);
-    const cachedResponse = await cache.match(url);
+    const cacheName = "phi-mixformer-candle-cache"
+    const cache = await caches.open(cacheName)
+    const cachedResponse = await cache.match(url)
     if (cachedResponse) {
-        const data = await cachedResponse.arrayBuffer();
-        return new Uint8Array(data);
+        const data = await cachedResponse.arrayBuffer()
+        return new Uint8Array(data)
     }
-    const res = await fetch(url, { cache: "force-cache" });
+    const res = await fetch(url, { cache: "force-cache" })
     while (!res.body) { }
-    const reader = res.body.getReader();
-    const contentLength = +(res.headers.get('Content-Length') ?? 0);
-    let receivedLength = 0;
-    let chunks = [];
+    const reader = res.body.getReader()
+    const contentLength = +(res.headers.get('Content-Length') ?? 0)
+    let receivedLength = 0
+    let chunks = []
     while (true) {
-        const { done, value } = await reader.read();
+        const { done, value } = await reader.read()
         if (done) {
-            break;
+            break
         }
-        chunks.push(value);
-        receivedLength += value.length;
+        chunks.push(value)
+        receivedLength += value.length
         if(Date.now() - lastSend > 250) {
             times.push(receivedLength)
             times = times.slice(1)
@@ -87,32 +87,32 @@ Download URL: ${url}`
             lastSend = Date.now()
         }
     }
-    let chunksAll = new Uint8Array(receivedLength);
-    let position = 0;
+    let chunksAll = new Uint8Array(receivedLength)
+    let position = 0
     for (let chunk of chunks) {
-        chunksAll.set(chunk, position);
-        position += chunk.length;
+        chunksAll.set(chunk, position)
+        position += chunk.length
     }
-    cache.put(url, new Response(chunksAll));
-    return chunksAll;
+    cache.put(url, new Response(chunksAll))
+    return chunksAll
 }
 
 async function concatenateArrayBuffers(urls) {
-    const arrayBuffers = await Promise.all(urls.map(url => fetchArrayBuffer(url)));
+    const arrayBuffers = await Promise.all(urls.map(url => fetchArrayBuffer(url)))
 
-    let totalLength = arrayBuffers.reduce((acc, arrayBuffer) => acc + arrayBuffer.byteLength, 0);
-    let concatenatedBuffer = new Uint8Array(totalLength);
+    let totalLength = arrayBuffers.reduce((acc, arrayBuffer) => acc + arrayBuffer.byteLength, 0)
+    let concatenatedBuffer = new Uint8Array(totalLength)
 
-    let offset = 0;
+    let offset = 0
     arrayBuffers.forEach(buffer => {
-        concatenatedBuffer.set(new Uint8Array(buffer), offset);
-        offset += buffer.byteLength;
-    });
-    return concatenatedBuffer;
+        concatenatedBuffer.set(new Uint8Array(buffer), offset)
+        offset += buffer.byteLength
+    })
+    return concatenatedBuffer
 }
 
 class Phi {
-    static instance = {};
+    static instance = {}
 
     static async getInstance(
         weightsURL,
@@ -123,36 +123,36 @@ class Phi {
     ) {
         // load individual modelID only once
         if (!this.instance[modelID]) {
-            await init();
+            await init()
 
-            self.postMessage({ status: "loading", message: "Loading Model" });
+            self.postMessage({ status: "loading", message: "Loading Model" })
             const [weightsArrayU8, tokenizerArrayU8, configArrayU8] =
                 await Promise.all([
                     weightsURL instanceof Array ? concatenateArrayBuffers(weightsURL) : fetchArrayBuffer(weightsURL),
                     fetchArrayBuffer(tokenizerURL),
                     fetchArrayBuffer(configURL),
-                ]);
+                ])
 
             this.instance[modelID] = new Model(
                 weightsArrayU8,
                 tokenizerArrayU8,
                 configArrayU8,
                 quantized
-            );
+            )
         }
-        return this.instance[modelID];
+        return this.instance[modelID]
     }
 }
 
-let controller = null;
+let controller = null
 self.addEventListener("message", (event) => {
     if (event.data.command === "start") {
-        controller = new AbortController();
-        generate(event.data);
+        controller = new AbortController()
+        generate(event.data)
     } else if (event.data.command === "abort") {
-        controller.abort();
+        controller.abort()
     }
-});
+})
 
 async function generate(data) {
     const {
@@ -167,18 +167,19 @@ async function generate(data) {
         repeatPenalty,
         seed,
         maxSeqLen,
-    } = data;
+        stuff
+    } = data
     try {
-        self.postMessage({ status: "loading", message: "Starting Phi" });
+        self.postMessage({ status: "loading", message: "Starting Phi" })
         const model = await Phi.getInstance(
             weightsURL,
             modelID,
             tokenizerURL,
             configURL,
             quantized
-        );
+        )
 
-        self.postMessage({ status: "loading", message: "Initializing model" });
+        self.postMessage({ status: "loading", message: "Initializing model" })
         const firstToken = model.init_with_prompt(
             prompt,
             temp,
@@ -186,13 +187,13 @@ async function generate(data) {
             repeatPenalty,
             64,
             BigInt(seed)
-        );
-        const seq_len = 2048;
+        )
+        const seq_len = 2048
 
-        let sentence = firstToken;
-        let maxTokens = maxSeqLen ? maxSeqLen : seq_len - prompt.length - 1;
-        let startTime = performance.now();
-        let tokensCount = 0;
+        let sentence = firstToken
+        let maxTokens = maxSeqLen ? maxSeqLen : seq_len - prompt.length - 1
+        let startTime = performance.now()
+        let tokensCount = 0
         while (tokensCount < maxTokens) {
             await new Promise(async (resolve) => {
                 if (controller && controller.signal.aborted) {
@@ -200,22 +201,23 @@ async function generate(data) {
                         status: "aborted",
                         message: "Aborted",
                         output: prompt + sentence,
-                    });
-                    return;
+                    })
+                    return
                 }
-                const token = await model.next_token();
-                if (token === "<|endoftext|>") {
+                const token = await model.next_token()
+                const terminates = stuff
+                if (terminates?.includes(token)) {
                     self.postMessage({
                         status: "complete",
                         message: "complete",
                         output: prompt + sentence,
-                    });
-                    return;
+                    })
+                    return
                 }
                 const tokensSec =
-                    ((tokensCount + 1) / (performance.now() - startTime)) * 1000;
+                    ((tokensCount + 1) / (performance.now() - startTime)) * 1000
 
-                sentence += token;
+                sentence += token
                 self.postMessage({
                     status: "generating",
                     message: "Generating token",
@@ -224,17 +226,17 @@ async function generate(data) {
                     totalTime: performance.now() - startTime,
                     tokensSec,
                     prompt: prompt,
-                });
-                setTimeout(resolve, 0);
-            });
-            tokensCount++;
+                })
+                setTimeout(resolve, 0)
+            })
+            tokensCount++
         }
         self.postMessage({
             status: "complete",
             message: "complete",
             output: prompt + sentence,
-        });
+        })
     } catch (e) {
-        self.postMessage({ error: e });
+        self.postMessage({ error: e })
     }
 }
