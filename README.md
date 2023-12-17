@@ -1,11 +1,1 @@
----
-title: Candle Phi Wasm Demo
-emoji: 🕯️ɸ
-colorFrom: gray
-colorTo: purple
-sdk: static
-pinned: false
-disable_embedding: true
----
-
-Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+# Candle phi 1.5 / 2 demo
